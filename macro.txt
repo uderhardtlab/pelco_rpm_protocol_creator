@@ -1,0 +1,200 @@
+Sub GenerateAndSaveOutputTableAsCSV()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Input") ' Update with your actual sheet name
+    
+    ' User inputs (assume these values are in a fixed range)
+    Dim totalHours As Long, totalMinutes As Long, totalSeconds As Long
+    Dim steadyTemp As Long, watts As Long, temp As Long, dutyCycle As Double
+    Dim totalSecondsTime As Double
+    Dim protocolName As String
+    Dim userPromptString As String, coolerString As String, vacuumString As String, steadyTempPumpString As String, stirrerString As String
+    Dim stirrerSpeed As Long, cycleVentTime As Long, cycleVacuumTime As Long, setPoint As Long, bubblerSetPoint As Long, loadCoolerSetPoint As Long
+    
+    
+    ' Read user input values
+    protocolName = ws.Range("B7").Value
+    totalHours = ws.Range("B8").Value ' Time (h)
+    totalMinutes = ws.Range("B9").Value ' Time (m)
+    totalSeconds = ws.Range("B10").Value ' Time (s)
+    steadyTemp = ws.Range("B11").Value ' Steady temp
+    watts = ws.Range("B12").Value ' Watts
+    dutyCycle = ws.Range("B13").Value / 100 ' Duty cycle as a decimal
+    temp = ws.Range("B14").Value
+    userPromptString = Trim(ws.Range("B15").Value)
+    coolerString = Trim(ws.Range("B16").Value)
+    vacuumString = Trim(ws.Range("B17").Value)
+    steadyTempPumpString = Trim(ws.Range("B18").Value)
+    stirrerString = Trim(ws.Range("B19").Value)
+    stirrerSpeed = ws.Range("B20").Value
+    cycleVentTime = ws.Range("B21").Value
+    cycleVacuumTime = ws.Range("B22").Value
+    setPoint = ws.Range("B23").Value
+    bubblerSetPoint = ws.Range("B24").Value
+    loadCoolerSetPoint = ws.Range("B25").Value
+    
+    Dim userPrompt As Integer
+    
+    Select Case LCase(userPromptString) ' Convert to lowercase for case-insensitive comparison
+    Case "on"
+        userPrompt = 1
+    Case "off"
+        userPrompt = 0
+    Case Else
+        userPrompt = -1 ' Default or error handling if value is unexpected
+    End Select
+
+        
+    Dim coolerOn As Integer, coolerOff As Integer, coolerAuto As Integer
+    
+    Select Case LCase(coolerString) ' Convert to lowercase for case-insensitive comparison
+    Case "on"
+        coolerOn = 1
+        coolerOff = 0
+        coolerAuto = 0
+    Case "off"
+        coolerOn = 0
+        coolerOff = 1
+        coolerAuto = 0
+    Case "auto"
+        coolerOn = 0
+        coolerOff = 0
+        coolerAuto = 1
+    Case Else
+        coolerOn = -1
+        coolerOff = -1
+        coolerAuto = -1
+    End Select
+
+
+    Dim vacuumOn As Integer, vacuumOff As Integer, vacuumAuto As Integer, vacuumBubble As Integer
+    
+    Select Case LCase(vacuumString) ' Convert to lowercase for case-insensitive comparison
+    Case "on"
+        vacuumOn = 1
+        vacuumOff = 0
+        vacuumAuto = 0
+        vacuumBubble = 0
+    Case "off"
+        vacuumOn = 0
+        vacuumOff = 1
+        vacuumAuto = 0
+        vacuumBubble = 0
+    Case "auto"
+        vacuumOn = 0
+        vacuumOff = 0
+        vacuumAuto = 1
+        vacuumBubble = 0
+    Case "bubble"
+        vacuumOn = 0
+        vacuumOff = 0
+        vacuumAuto = 0
+        vacuumBubble = 1
+    Case Else
+        vacuumOn = -1
+        vacuumOff = -1
+        vacuumAuto = -1
+        vacuumBubble = -1
+    End Select
+    
+    
+    Dim steadyTempPump As Integer
+    
+    Select Case LCase(steadyTempPumpString) ' Convert to lowercase for case-insensitive comparison
+    Case "on"
+        steadyTempPump = 1
+    Case "off"
+        steadyTempPump = 0
+    Case Else
+        steadyTempPump = -1 ' Default or error handling if value is unexpected
+    End Select
+    
+    
+    Dim stirrerOn As Integer, stirrerOff As Integer, stirrerAuto As Integer
+    
+    Select Case LCase(stirrerString) ' Convert to lowercase for case-insensitive comparison
+    Case "on"
+        stirrerOn = 1
+        stirrerOff = 0
+        stirrerAuto = 0
+    Case "off"
+        stirrerOn = 0
+        stirrerOff = 1
+        stirrerAuto = 0
+    Case "auto"
+        stirrerOn = 0
+        stirrerOff = 0
+        stirrerAuto = 1
+    Case Else
+        stirrOn = -1
+        stirrOff = -1
+        stirrAuto = -1
+    End Select
+    
+    
+    ' Calculate total time in seconds and each step time
+
+    totalSecondsTime = totalHours * 3600 + totalMinutes * 60 + totalSeconds - 5 * 60
+    Dim stepTime As Double
+    stepTime = totalSecondsTime / 45.5
+
+    ' Define where to start outputting data
+    Dim outputRow As Long
+    outputRow = 15 ' Adjust starting row for output table if necessary
+    
+    ' Set up CSV content
+    Dim csvData As String
+    Dim separator As String
+    separator = ","
+    
+    ' Write CSV header row
+    csvData = "100" & separator & "1" & separator & "0" & separator & "0" & vbNewLine & protocolName & vbNewLine
+    ' Generate the first row (Cooldown) and add to CSV
+    csvData = csvData & "Cooldown" & separator & "1" & separator & "0" & separator & "5" & separator & "0" & separator & "0" & separator & "0" & separator & steadyTemp & separator & "0" & separator & "0" & separator & "0" & separator & "0" & separator & loadCoolerSetPoint & separator & "0" & separator & "0" & separator & "1" & separator & "0" & separator & "0" & separator & "1" & separator & "0" & separator & "0" & separator & "0" & separator & "1" & separator & "0" & separator & "0" & separator & "0" & vbNewLine
+        
+    outputRow = outputRow + 1
+    
+    ' Calculate on and off times based on duty cycle
+    Dim onTime As Double, offTime As Double
+    onTime = stepTime * dutyCycle
+    offTime = stepTime * (1 - dutyCycle)
+
+    
+    ' Generate alternating "On" and "Off" rows and add to CSV
+    Dim i As Long
+    For i = 2 To 100
+        Dim rowLabel As String
+        Dim hours As Long, minutes As Long, seconds As Long
+        
+        If i Mod 2 = 1 Then
+            ' "On" row
+            rowLabel = "On"
+            hours = Int(onTime / 3600)
+            minutes = Int((onTime Mod 3600) / 60)
+            seconds = Int(onTime Mod 60)
+            
+            csvData = csvData & rowLabel & separator & i & separator & Format(hours, "00") & separator & Format(minutes, "00") & separator & Format(seconds, "00") & separator & watts & separator & temp & separator & steadyTemp & separator & stirrerSpeed & separator & cycleVentTime & separator & cycleVacuumTime & separator & setPoint & separator & loadCoolerSetPoint & separator & bubblerSetPoint & separator & userPrompt & separator & coolerOff & separator & coolerAuto & separator & coolerOn & separator & vacuumOff & separator & vacuumBubble & separator & vacuumAuto & separator & vacuumOn & separator & steadyTempPump & separator & stirrerOff & separator & stirrerAuto & separator & stirrerOn & vbNewLine
+        Else
+            ' "Off" row
+            rowLabel = "Off"
+            hours = Int(offTime / 3600)
+            minutes = Int((offTime Mod 3600) / 60)
+            seconds = Int(offTime Mod 60)
+            csvData = csvData & rowLabel & separator & i & separator & Format(hours, "00") & separator & Format(minutes, "00") & separator & Format(seconds, "00") & separator & "0" & separator & temp & separator & steadyTemp & separator & stirrerSpeed & separator & cycleVentTime & separator & cycleVacuumTime & separator & setPoint & separator & loadCoolerSetPoint & separator & bubblerSetPoint & separator & userPrompt & separator & coolerOff & separator & coolerAuto & separator & coolerOn & separator & vacuumOff & separator & vacuumBubble & separator & vacuumAuto & separator & vacuumOn & separator & steadyTempPump & separator & stirrerOff & separator & stirrerAuto & separator & stirrerOn & vbNewLine
+        End If
+        
+        outputRow = outputRow + 1
+    Next i
+    
+    ' Save CSV data to a file
+    Dim filePath As String
+    filePath = ThisWorkbook.Path & "\Protocol_" & protocolName & ".dat"
+    Dim fileNum As Integer
+    fileNum = FreeFile
+    
+    Open filePath For Output As #fileNum
+    Print #fileNum, csvData
+    Close #fileNum
+    
+    MsgBox "Output table saved as CSV at " & filePath
+End Sub
+
